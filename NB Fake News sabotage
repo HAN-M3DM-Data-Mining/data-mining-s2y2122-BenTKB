@@ -1,0 +1,167 @@
+---
+  title: "Assigment - Naive Bayes DIY Sab"
+author:
+  - name author here - Ben van Vugt
+- name reviewer here - Willem Xoster 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_notebook:
+  toc: true
+toc_depth: 2
+---
+  
+  ```{r}
+
+install.packages("tidyverse")
+install.packages("tm")            #for text mining 
+install.packages("wordcloud")
+install.packages("e1071")
+install.packages("RColorBrewer")  #for color palettes
+
+library(tidyverse)
+library(tm)
+library(caret)
+library(wordcloud)
+library(e1071)
+library(cd)
+library(class)
+library(magrittr)                 #needs to run evertyime you start R and want the use %>%  symbol
+library(dplyr)
+library(RColorBrewer)
+library(corpus)
+---
+  
+  Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train your own Naive Bayes model. Follow all the steps from the CRISP-DM model.
+
+
+## Business Understanding
+```{r}
+#The data set contains strains of real and fake news. #To predict wheter the news is fake or not I will build a model. 
+#First I have to clean the data.
+```
+
+
+## Data Understanding
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s2y2122-EilisLerpetre/master/datasets/NB-fakenews.csv"
+rawdata <- read.csv(url)
+```
+#Note: it takes some time to open the data set
+```{r}
+## Data Preparation
+rawdata <- rawdata[-1]
+rawdata <- rawdata[-1]
+rawdata <- rawdata[-1]
+
+```
+
+```{r}
+#To mutate the data from digits of 0 and 1 to the words "Fake" and "True" use the follow code
+
+rawdata <- mutate(rawdata,label = recode(label,"0" = "True","1" = "Fake"))
+
+rawdata$label <- rawdata$label %>%  factor %>% relevel("Fake")
+class(rawdata$label)
+```
+
+```{r}
+#Filter the Real and Fake data apart from each other
+Real <- rawdata %>% filter(label == "Real")
+Fake <- rawdata %>% filter(label == "Fake")
+```
+
+
+```{r}
+#Show which words are often used in the articles 
+
+wordcloud(Real$text,max.words = 200, random.order=TRUE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2")) 
+          
+wordcloud(Fake$text,max.words = 200, random.order=TRUE, rot.per=0.35, 
+          colors=brewer.pal(8, "Set2"))
+```
+
+```{r}
+#Make the raw corpus 
+rawCorpus <- Corpus(Vectorsource(rawdata$text))
+inspect(rawCorpus[1:1])
+```
+
+```{r}
+#Make all the characters lowercase
+tolower(rawCorpus)
+```
+
+
+```{r}
+#Remove all punctuation marks
+removePunctuation(rawCorpus)
+```
+
+```{r}
+#Remove all the numbers
+removeNumbers(rawCorpus)
+```
+
+
+```{r}
+#Remove excess whitespace
+stripWhitespace(rawCorpus)
+
+```
+
+```{r}
+#Remove the stopwords
+removestopwords(rawCorpus)
+```
+
+```{r}
+#Create Document Term Matrix to count all the words
+#Will take some time to load
+cleanDTM <- rawCorpus %>% DocumentTermMatrix()
+inspect(cleanDTM)
+```
+
+```{r}
+#Insert the random numer generator (RNG)
+set.seed(123)
+```
+
+```{r}
+DataPartion <- createDataPartition(rawdata$label, p=0.99, list = FALSE, times = 1)
+head(DataPartion)
+```
+
+```{r}
+trainCorpus <- cleancorpus[trainIndex]
+testCorpus <- cleancorpus[-trainIndex]
+trainDTM <- cleanDTM2[trainIndex, ]
+testDTM <- cleanDTM2[-trainIndex, ]
+```
+
+```{r}
+#Creating a matrix with the words
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, 1, 0) %>% factor(levels = c(0,1), labels = c("no", "yes"))
+}
+```
+
+```{r}
+nColsDTM <- dim(trainDTM)[2]
+trainDTM <- apply(trainDTM, MARGIN = 2, convert_counts)
+testDTM <- apply(testDTM, MARGIN = 2, convert_counts)
+
+head(trainDTM[,1:10])
+```
+
+```{r}
+#Making a model 
+nbayesModel <-  naiveBayes(trainDTM, trainDF$text, laplace = 1)
+predVec <- predict(nbayesModel, testDTM)
+confusionMatrix(predVec, testDF$label, positive = "1", dnn = c("Prediction", "True"))
+```
+
+## Evaluation and Deployment
+text and code here
+
+reviewer adds suggestions for improving the model
