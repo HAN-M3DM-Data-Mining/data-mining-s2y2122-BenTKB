@@ -1,0 +1,150 @@
+---
+title: "Assigment - kNN DIY SABOTAGED"
+author:
+  - Willem Coster - Author
+  - Ben van Vught - Reviewer
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+---
+
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(class)
+library(caret)
+library(magrittr) # needs to be run every time you start R and want to use %>%
+library(dplyr)    # alternatively, this also loads %>%
+```
+
+Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train  your own kNN model. Follow all the steps from the CRISP-DM model.
+
+
+## Business Understanding
+
+The "business" in the case is a research for HCV. The goal is to accurately guess when a blood donor has hepatitus.
+
+## Data Understanding
+
+According to the abstract given from the <a href="https://archive.ics.uci.edu/ml/datasets/HCV+data#"> Machine Learning Repository</a> the data set contains laboratory values of blood donors and Hepatitis C patients and demographic values like age.
+
+```{r}
+#Putting the given data sets in a variable
+DF <- read.csv("https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-hcvdat0.csv")
+# using str() to give some basic info
+str(DF)
+```
+
+The dataset has 615 observations and 14 variables
+
+## Data Preparation
+
+Putting the given data sets in a variable
+```{r}
+
+#1.0 First uou need to clean the data
+cleanDF <- DF[-1]
+
+#setting category to factor
+cleanDF$Category <- factor(cleanDF$Category)
+levels(cleanDF$Category) <- c("Donor", "Donor", "Hepatitis", "Hepatitis", "Hepatitis")
+
+#2.0
+
+#cleanDFs <- cleanDF %>% 
+    #mutate(Sex = recode(Sex, 
+                      "m" = "0", 
+                      "f" = "1"))
+cleanDF$Sex <- as.factor(cleanDF$Sex)
+cleanDF <- cleanDF %>% 
+    mutate(Sex = recode(Sex, 
+                      "m" = "0", 
+                      "f" = "1"))
+
+cntDiag <- table(cleanDF$Category)
+propDiag <- round(prop.table(cntDiag) * 100 , digits = 1)
+cntDiag
+propDiag
+
+
+```
+
+
+```{r}
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+#replace empty values in rows for the mean of it's column
+
+#3.0
+for(i in 4:ncol(cleanDF)){
+  #cleanDF[is.na(cleanDF[,i]), i] <- mean(cleanDF[,i], na.rm = TRUE)
+}
+   cleanDF[is.na(cleanDF[,i]), i] <- mean(cleanDF[,i], na.rm = TRUE)
+}
+
+
+#Creating normalized version of the cleaned data frame
+#4.0
+#nCols <- dim(cleanDF)[2]
+#cleanDF_n <- sapply(2:nCols,
+                    function(x) {
+  #normalize(cleanDF[,x])
+#}) %>% as.data.frame()
+                      
+cleanDF_n <- data.frame(Age = normalize(cleanDF$Age),Sex = cleanDF$Sex, ALB = normalize(cleanDF$ALB), ALP = normalize(cleanDF$ALP), ALT = normalize(cleanDF$ALT), AST = normalize(cleanDF$AST), BIL = normalize(cleanDF$BIL),  CHE = normalize(cleanDF$CHE), CHOL = normalize(cleanDF$CHOL), CREA = normalize(cleanDF$CREA), GGT = normalize(cleanDF$GGT), PROT = normalize(cleanDF$PROT))
+
+summary(cleanDF_n)
+```
+
+Making training and test sets
+```{r}
+#4.0 take a small part of the sample size
+smp_size <- floor(0.60 * nrow(cleanDF_n))
+
+#5.0 set seed 
+set.seed((22)
+train_ind <- sample(seq_len(nrow(cleanDF_n)), size = smp_size)
+
+trainDF_feat <- cleanDF_n[1:469,  ]
+testDF_feat <- cleanDF_n[470:615,  ]
+trainDF_labels <- cleanDF[1:469,  1]
+testDF_labels <- cleanDF[470:615,  1]
+```
+
+
+## Modeling
+
+#6.0K needs to be smaller number
+```{r}
+cleanDF_test_pred <- knn(train = as.matrix(trainDF_feat), test = as.matrix(testDF_feat), cl = as.matrix(trainDF_labels), k = 4)
+cleanDF_test_pred
+```
+
+
+## Evaluation and Deployment
+
+
+```{r}
+confusionMatrix(cleanDF_test_pred, testDF_labels, positive = NULL, dnn = c("Prediction", "True"))
+```
+
+As seen above the accuracy of this KNN model equals 93,5%. It P-value scores lower than 0.05.
+
+reviewer adds suggestions for improving the model
+© 2022 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
